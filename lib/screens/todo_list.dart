@@ -6,12 +6,14 @@ class TodoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TodoListModel listModel = TodoListModel();
+    // TodoListModel listModel = TodoListModel();
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('ToDo DApp'),
+        title: const Text(
+          'Todo List',
+        ),
         centerTitle: true,
+        backgroundColor: Colors.black54,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -22,31 +24,23 @@ class TodoList extends StatelessWidget {
             },
           );
         },
+        backgroundColor: Colors.black54,
         child: const Icon(Icons.add),
       ),
-      body: listModel.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.01,
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: listModel.todos.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: InkWell(
-                          onTap: () {
-                            // showBottomSheet(context: context, builder: builder);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+      // body: ListView.builder(
+      //   itemCount: listModel.taskCount,
+      //   itemBuilder: (context, index) {
+      //     return ListTile(
+      //       title: Text(listModel.todos[index].taskName),
+      //       trailing: Checkbox(
+      //         value: listModel.todos[index].isCompleted,
+      //         onChanged: (value) {
+      //           listModel.toggleComplete(index);
+      //         },
+      //       ),
+      //     );
+      //   },
+      // ),
     );
   }
 }
