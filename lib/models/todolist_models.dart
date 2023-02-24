@@ -19,7 +19,7 @@ class TodoListModel extends ChangeNotifier {
   }
 
   List<Task> todos = [];
-  bool isLoading = true;
+  bool isLoading = false;
   late int taskCount;
   final String _rpcUrl = "http://127.0.0.1:7545";
   final String _wsUrl = "ws://127.0.0.1:7545/";
@@ -43,97 +43,96 @@ class TodoListModel extends ChangeNotifier {
   late ContractFunction _toggleComplete;
 
   getTodos() async {
-    List totalTaskList = await TodoListModel()._client.call(
-      contract: TodoListModel()._contract,
-      function: TodoListModel()._taskCount,
+    List totalTaskList = await _client.call(
+      contract: _contract,
+      function: _taskCount,
       params: [],
     );
     BigInt totalTask = totalTaskList[0];
-    TodoListModel().taskCount = totalTask.toInt();
-    TodoListModel().todos.clear();
+    taskCount = totalTask.toInt();
+    todos.clear();
     for (var i = 0; i < totalTask.toInt(); i++) {
-      var temp = await TodoListModel()._client.call(
-        contract: TodoListModel()._contract,
-        function: TodoListModel()._todos,
+      var temp = await _client.call(
+        contract: _contract,
+        function: _todos,
         params: [BigInt.from(i)],
       );
       if (temp[1] != "") {
-        TodoListModel().todos.add(
-              Task(
-                id: (temp[0] as BigInt).toInt(),
-                taskName: temp[1],
-                isCompleted: temp[2],
-              ),
-            );
+        todos.add(
+          Task(
+            id: (temp[0] as BigInt).toInt(),
+            taskName: temp[1],
+            isCompleted: temp[2],
+          ),
+        );
       }
     }
-    TodoListModel().isLoading = false;
-    TodoListModel().todos = TodoListModel().todos.reversed.toList();
+    isLoading = false;
+    todos = todos.reversed.toList();
     notifyListeners();
   }
 
   addTask(String taskNameData) async {
-    TodoListModel().isLoading = true;
+    isLoading = true;
     notifyListeners();
-    await TodoListModel()._client.sendTransaction(
-          TodoListModel()._credentials,
-          Transaction.callContract(
-            contract: TodoListModel()._contract,
-            function: TodoListModel()._createTask,
-            parameters: [taskNameData],
-          ),
-        );
+    await _client.sendTransaction(
+      _credentials,
+      Transaction.callContract(
+        contract: _contract,
+        function: _createTask,
+        parameters: [taskNameData],
+      ),
+    );
     await getTodos();
   }
 
   updateTask(int id, String taskNameData) async {
-    TodoListModel().isLoading = true;
-    await TodoListModel()._client.sendTransaction(
-          TodoListModel()._credentials,
-          Transaction.callContract(
-            contract: TodoListModel()._contract,
-            function: TodoListModel()._updateTask,
-            parameters: [BigInt.from(id), taskNameData],
-          ),
-        );
+    isLoading = true;
+    await _client.sendTransaction(
+      _credentials,
+      Transaction.callContract(
+        contract: _contract,
+        function: _updateTask,
+        parameters: [BigInt.from(id), taskNameData],
+      ),
+    );
     await getTodos();
   }
 
   deleteTask(int id) async {
-    TodoListModel().isLoading = true;
+    isLoading = true;
     notifyListeners();
-    await TodoListModel()._client.sendTransaction(
-          TodoListModel()._credentials,
-          Transaction.callContract(
-            contract: TodoListModel()._contract,
-            function: TodoListModel()._deleteTask,
-            parameters: [BigInt.from(id)],
-          ),
-        );
+    await _client.sendTransaction(
+      _credentials,
+      Transaction.callContract(
+        contract: _contract,
+        function: _deleteTask,
+        parameters: [BigInt.from(id)],
+      ),
+    );
     await getTodos();
   }
 
   toggleComplete(int id) async {
-    TodoListModel().isLoading = true;
+    isLoading = true;
     notifyListeners();
-    await TodoListModel()._client.sendTransaction(
-          TodoListModel()._credentials,
-          Transaction.callContract(
-            contract: TodoListModel()._contract,
-            function: TodoListModel()._toggleComplete,
-            parameters: [BigInt.from(id)],
-          ),
-        );
+    await _client.sendTransaction(
+      _credentials,
+      Transaction.callContract(
+        contract: _contract,
+        function: _toggleComplete,
+        parameters: [BigInt.from(id)],
+      ),
+    );
     await getTodos();
   }
 
   Future<void> init() async {
-    TodoListModel()._client = Web3Client(
-      TodoListModel()._rpcUrl,
+    _client = Web3Client(
+      _rpcUrl,
       Client(),
       socketConnector: () {
-        return IOWebSocketChannel.connect(TodoListModel()._wsUrl)
-            .cast<String>();
+        return IOWebSocketChannel.connect(_wsUrl).cast<String>();
       },
     );
 
@@ -147,45 +146,43 @@ class TodoListModel extends ChangeNotifier {
       "smartcontract/build/contracts/TodoContract.json",
     );
     var jsonAbi = jsonDecode(abiStringFile);
-    TodoListModel()._abiCode = jsonEncode(jsonAbi["abi"]);
-    TodoListModel()._contractAddress = EthereumAddress.fromHex(
+    _abiCode = jsonEncode(jsonAbi["abi"]);
+    _contractAddress = EthereumAddress.fromHex(
       jsonAbi["networks"]["5777"]["address"],
     );
   }
 
   Future<void> getCredentials() async {
-    TodoListModel()._credentials = await TodoListModel()
-        ._client
-        .credentialsFromPrivateKey(TodoListModel()._privateKey);
-    TodoListModel()._ownAddress = TodoListModel()._credentials.address;
+    _credentials = EthPrivateKey.fromHex(_privateKey);
+    _ownAddress = _credentials.address;
   }
 
   Future<void> getDeployedContract() async {
-    TodoListModel()._contract = DeployedContract(
+    _contract = DeployedContract(
       ContractAbi.fromJson(
-        TodoListModel()._abiCode,
+        _abiCode,
         "TodoList",
       ),
-      TodoListModel()._contractAddress,
+      _contractAddress,
     );
-    TodoListModel()._taskCount = TodoListModel()._contract.function(
-          "taskCount",
-        );
-    TodoListModel()._updateTask = TodoListModel()._contract.function(
-          "updateTask",
-        );
-    TodoListModel()._createTask = TodoListModel()._contract.function(
-          "createTask",
-        );
-    TodoListModel()._deleteTask = TodoListModel()._contract.function(
-          "deleteTask",
-        );
-    TodoListModel()._toggleComplete = TodoListModel()._contract.function(
-          "toggleComplete",
-        );
-    TodoListModel()._todos = TodoListModel()._contract.function(
-          "todos",
-        );
-    await TodoListModel().getTodos();
+    _taskCount = _contract.function(
+      "taskCount",
+    );
+    _updateTask = _contract.function(
+      "updateTask",
+    );
+    _createTask = _contract.function(
+      "createTask",
+    );
+    _deleteTask = _contract.function(
+      "deleteTask",
+    );
+    _toggleComplete = _contract.function(
+      "toggleComplete",
+    );
+    _todos = _contract.function(
+      "todos",
+    );
+    await getTodos();
   }
 }

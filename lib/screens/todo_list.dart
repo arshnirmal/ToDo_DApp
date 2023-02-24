@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_dapp/models/todolist_models.dart';
+import 'package:todo_dapp/screens/todo_bottomsheet.dart';
 
 class TodoList extends StatelessWidget {
-  const TodoList({required Key key}) : super(key: key);
+  const TodoList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    var listModel = Provider.of<TodoListModel>(context, listen: true);
+    var listModel = Provider.of<TodoListModel>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -21,7 +22,9 @@ class TodoList extends StatelessWidget {
         backgroundColor: Colors.black87,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showTodoBottomSheet(context);
+        },
         backgroundColor: Colors.black54,
         child: const Icon(Icons.add),
       ),
@@ -39,9 +42,39 @@ class TodoList extends StatelessWidget {
                   ),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: 0,
+                      itemCount: listModel.todos.length,
                       itemBuilder: (context, index) {
-                        return null;
+                        return ListTile(
+                          title: InkWell(
+                            onTap: () {},
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 8,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Checkbox(
+                                    value: false,
+                                    onChanged: (val) {
+                                      listModel.toggleComplete(
+                                        listModel.todos[index].id,
+                                      );
+                                    },
+                                  ),
+                                  Text(
+                                    listModel.todos[index].taskName,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
