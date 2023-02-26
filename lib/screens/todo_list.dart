@@ -33,7 +33,7 @@ class TodoList extends StatelessWidget {
               child: CircularProgressIndicator(
                 color: Colors.black,
               ),
-            ) //YaZ15337
+            )
           : Center(
               child: Column(
                 children: [
@@ -46,7 +46,12 @@ class TodoList extends StatelessWidget {
                       itemBuilder: (context, index) {
                         return ListTile(
                           title: InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              showTodoBottomSheet(
+                                context,
+                                task: listModel.todos[index],
+                              );
+                            },
                             child: Container(
                               margin: const EdgeInsets.symmetric(
                                 vertical: 2,
@@ -60,7 +65,7 @@ class TodoList extends StatelessWidget {
                               child: Row(
                                 children: [
                                   Checkbox(
-                                    value: false,
+                                    value: listModel.todos[index].isCompleted,
                                     onChanged: (val) {
                                       listModel.toggleComplete(
                                         listModel.todos[index].id,
