@@ -14,15 +14,11 @@ class Task {
 }
 
 class TodoListModel extends ChangeNotifier {
-  TodoListModel() {
-    init();
-  }
-
   List<Task> todos = [];
-  bool isLoading = false;
+  bool isLoading = true;
   late int taskCount;
-  final String _rpcUrl = "http://127.0.0.1:7545";
-  final String _wsUrl = "ws://127.0.0.1:7545/";
+  final String _rpcUrl = "http://192.168.1.7:7545";
+  final String _wsUrl = "ws://192.168.1.7:7545/";
 
   final String _privateKey =
       "0xa94b89a08c74748d1e779ab0abaf597555daedac62dd0a71aa480692c609d791";
@@ -41,6 +37,55 @@ class TodoListModel extends ChangeNotifier {
   late ContractFunction _updateTask;
   late ContractFunction _deleteTask;
   late ContractFunction _toggleComplete;
+
+  TodoListModel() {
+    init();
+  }
+
+  init() async {
+    _client = Web3Client(
+      _rpcUrl,
+      Client(),
+      socketConnector: () {
+        return IOWebSocketChannel.connect(_wsUrl).cast<String>();
+      },
+    );
+
+    await getAbi();
+    await getCredentials();
+    await getDeployedContract();
+  }
+
+  Future<void> getAbi() async {
+    String abiStringFile = await rootBundle.loadString(
+      "smartcontract/build/contracts/TodoContract.json",
+    );
+    var jsonAbi = jsonDecode(abiStringFile);
+    _abiCode = jsonEncode(jsonAbi["abi"]);
+    _contractAddress = EthereumAddress.fromHex(
+      jsonAbi["networks"]["5777"]["address"],
+    );
+  }
+
+  Future<void> getCredentials() async {
+    _credentials = await _client.credentialsFromPrivateKey(_privateKey);
+    _ownAddress = await _credentials.extractAddress();
+    print(_credentials);
+  }
+
+  Future<void> getDeployedContract() async {
+    _contract = DeployedContract(
+      ContractAbi.fromJson(_abiCode, "TodoContract"),
+      _contractAddress,
+    );
+    _taskCount = _contract.function("taskCount");
+    _updateTask = _contract.function("updateTask");
+    _createTask = _contract.function("createTask");
+    _deleteTask = _contract.function("deleteTask");
+    _toggleComplete = _contract.function("toggleComplete");
+    _todos = _contract.function("todos");
+    getTodos();
+  }
 
   getTodos() async {
     List totalTaskList = await _client.call(
@@ -72,7 +117,7 @@ class TodoListModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  addTask(String taskNameData) async {
+  Future<void> addTask(String taskNameData) async {
     isLoading = true;
     notifyListeners();
     await _client.sendTransaction(
@@ -83,10 +128,10 @@ class TodoListModel extends ChangeNotifier {
         parameters: [taskNameData],
       ),
     );
-    await getTodos();
+    getTodos();
   }
 
-  updateTask(int id, String taskNameData) async {
+  Future<void> updateTask(int id, String taskNameData) async {
     isLoading = true;
     await _client.sendTransaction(
       _credentials,
@@ -96,10 +141,10 @@ class TodoListModel extends ChangeNotifier {
         parameters: [BigInt.from(id), taskNameData],
       ),
     );
-    await getTodos();
+    getTodos();
   }
 
-  deleteTask(int id) async {
+  Future<void> deleteTask(int id) async {
     isLoading = true;
     notifyListeners();
     await _client.sendTransaction(
@@ -110,10 +155,10 @@ class TodoListModel extends ChangeNotifier {
         parameters: [BigInt.from(id)],
       ),
     );
-    await getTodos();
+    getTodos();
   }
 
-  toggleComplete(int id) async {
+  Future<void> toggleComplete(int id) async {
     isLoading = true;
     notifyListeners();
     await _client.sendTransaction(
@@ -124,65 +169,6 @@ class TodoListModel extends ChangeNotifier {
         parameters: [BigInt.from(id)],
       ),
     );
-    await getTodos();
-  }
-
-  Future<void> init() async {
-    _client = Web3Client(
-      _rpcUrl,
-      Client(),
-      socketConnector: () {
-        return IOWebSocketChannel.connect(_wsUrl).cast<String>();
-      },
-    );
-
-    await getAbi();
-    await getCredentials();
-    await getDeployedContract();
-  }
-
-  Future<void> getAbi() async {
-    String abiStringFile = await rootBundle.loadString(
-      "smartcontract/build/contracts/TodoContract.json",
-    );
-    var jsonAbi = jsonDecode(abiStringFile);
-    _abiCode = jsonEncode(jsonAbi["abi"]);
-    _contractAddress = EthereumAddress.fromHex(
-      jsonAbi["networks"]["5777"]["address"],
-    );
-  }
-
-  Future<void> getCredentials() async {
-    _credentials = EthPrivateKey.fromHex(_privateKey);
-    _ownAddress = _credentials.address;
-  }
-
-  Future<void> getDeployedContract() async {
-    _contract = DeployedContract(
-      ContractAbi.fromJson(
-        _abiCode,
-        "TodoList",
-      ),
-      _contractAddress,
-    );
-    _taskCount = _contract.function(
-      "taskCount",
-    );
-    _updateTask = _contract.function(
-      "updateTask",
-    );
-    _createTask = _contract.function(
-      "createTask",
-    );
-    _deleteTask = _contract.function(
-      "deleteTask",
-    );
-    _toggleComplete = _contract.function(
-      "toggleComplete",
-    );
-    _todos = _contract.function(
-      "todos",
-    );
-    await getTodos();
+    getTodos();
   }
 }

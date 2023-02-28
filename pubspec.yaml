@@ -21,5 +21,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-assets: -todo_dapp/smartcontract/build/contracts/TodoContract.json
+  assets:
+    - smartcontract/
+    - smartcontract/build/contracts/TodoContract.json
